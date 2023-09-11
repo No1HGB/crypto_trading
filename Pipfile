@@ -10,6 +10,7 @@ numpy = "*"
 pyfredapi = "*"
 aiohttp = "*"
 certifi = "*"
+python-dotenv = "*"
 
 [dev-packages]
 

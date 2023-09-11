@@ -1,6 +1,16 @@
 import pyfredapi as pf
 import pandas as pd
 import os
+from dotenv import load_dotenv
+
+# 현재 스크립트의 디렉토리 경로를 찾습니다
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 스크립트 디렉토리의 상위 디렉토리에서 .env 파일을 찾습니다
+env_path = os.path.join(script_dir, "../.env")
+
+# 환경 변수를 로드합니다
+load_dotenv(dotenv_path=env_path)
 
 
 def append_rate_data(symbol):
