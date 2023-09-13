@@ -38,17 +38,22 @@ async def fetch(session, url, params, headers):
 
 
 async def append_arkham_data(
-    start_timestamp, end_timestamp, df, from_p="", to_p="", progress_file="progress.txt"
+    start_timestamp, end_timestamp, df, from_p="", to_p=""
 ) -> pd.DataFrame:
     API_URL_ARKHAM = "https://api.arkhamintelligence.com/transfers"
     interval_timestamp = 15 * 60 * 1000
 
-    """
+    if from_p and not to_p:
+        df_file = f"dataframe_from_{from_p}.pkl"
+        progress_file = f"progress_from_{from_p}.txt"
+    elif not from_p and to_p:
+        df_file = f"dataframe_to_{to_p}.pkl"
+        progress_file = f"progress_to_{to_p}.txt"
+
     # 스크립트 시작 시 저장된 데이터 프레임 불러오기
-    if os.path.exists("dataframe.pkl"):
-        with open("dataframe.pkl", "rb") as file:
+    if os.path.exists(df_file):
+        with open(df_file, "rb") as file:
             df = pickle.load(file)
-    """
 
     # 진행 상태 로딩
     if os.path.exists(progress_file):
@@ -135,7 +140,7 @@ async def append_arkham_data(
                         print(f"No data for timestamp: {date_index}_to")
 
                 # Save the progress after processing each timestamp
-                with open("dataframe.pkl", "wb") as file:
+                with open(df_file, "wb") as file:
                     pickle.dump(df, file)
 
                 with open(progress_file, "w") as file:
