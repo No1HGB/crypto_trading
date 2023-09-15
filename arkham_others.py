@@ -58,6 +58,6 @@ async def to_coinbase():
     data_toC.to_csv(f"data/to_{COINBASE}.csv", index=True)
 
 
-asyncio.run(to_binance())
+# asyncio.run(to_binance())
 asyncio.run(from_coinbase())
 asyncio.run(to_coinbase())

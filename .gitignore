@@ -2,5 +2,13 @@ data/
 .vscode/
 __pycache__/
 .env
-dataframe.pkl
-progress.txt
+
+dataframe_from_binance.pkl
+dataframe_to_binance.pkl
+dataframe_from_coinbase.pkl
+dataframe_to_coinbase.pkl
+
+progress_from_binance.txt
+progress_to_binance.txt
+progress_from_coinbase.txt
+progress_to_coinbase.txt
