@@ -11,6 +11,9 @@ pyfredapi = "*"
 aiohttp = "*"
 certifi = "*"
 python-dotenv = "*"
+scikit-learn = "*"
+tensorflow = "*"
+google = "*"
 
 [dev-packages]
 
