@@ -1,6 +1,5 @@
 # from google.colab import drive
 # drive.mount('/content/drive')
-
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
@@ -8,6 +7,8 @@ from sklearn.metrics import mean_squared_error
 import numpy as np
 import h5py
 from tensorflow import keras
+
+# from google.colab import files
 
 
 class DiskDataGenerator(keras.utils.Sequence):
@@ -119,7 +120,13 @@ plt.title("Training and Validation Loss")
 plt.xlabel("Epoch")
 plt.ylabel("Loss Value")
 plt.legend(loc="upper right")
+
+# 그래프를 파일로 저장합니다.
+plt.savefig("loss_plot.png")
+
+# 그래프를 화면에 표시 및 저장
 plt.show()
+# files.download('loss_plot_1.png')
 
 # 모델 평가
 with h5py.File(filename, "r") as f:
@@ -129,8 +136,6 @@ with h5py.File(filename, "r") as f:
 mse = mean_squared_error(y_test, y_pred)
 print(f"MSE: {mse}")
 
-# from google.colab import files
-# files.download("lstm_1.h5")
-
-# from google.colab import files
+# 모델 저장 및 다운로드
+model.save("lstm_1.h5")
 # files.download("lstm_1.h5")
