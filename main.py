@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
@@ -18,7 +19,7 @@ scaler = MinMaxScaler()
 data[features] = scaler.fit_transform(data[features])
 
 # 데이터를 시퀀스로 구성합니다.
-seq_length = 10
+seq_length = 192
 X, y = [], []
 
 for i in range(len(data) - seq_length):
@@ -38,12 +39,12 @@ model = keras.models.Sequential(
     [
         keras.layers.LSTM(
             50,
-            activation="relu",
+            activation="tanh",
             return_sequences=True,
             input_shape=(X_train.shape[1], X_train.shape[2]),
         ),
         keras.layers.Dropout(0.2),
-        keras.layers.LSTM(50, activation="relu"),
+        keras.layers.LSTM(50, activation="tanh"),
         keras.layers.Dropout(0.2),
         keras.layers.Dense(y_train.shape[1]),
     ]
@@ -53,7 +54,16 @@ model = keras.models.Sequential(
 model.compile(optimizer="adam", loss="mean_squared_error")
 
 # 모델을 학습시킵니다.
-model.fit(X_train, y_train, epochs=32, batch_size=32, validation_split=0.1)
+history = model.fit(X_train, y_train, epochs=100, batch_size=32, validation_split=0.1)
+
+# 학습과 검증 손실을 그래프로 표현합니다.
+plt.plot(history.history["loss"], label="Training Loss")
+plt.plot(history.history["val_loss"], label="Validation Loss")
+plt.title("Training and Validation Loss")
+plt.xlabel("Epoch")
+plt.ylabel("Loss Value")
+plt.legend(loc="upper right")
+plt.show()
 
 # 모델을 평가합니다.
 y_pred = model.predict(X_test)
