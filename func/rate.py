@@ -2,6 +2,7 @@ import pyfredapi as pf
 import pandas as pd
 import os
 from dotenv import load_dotenv
+from datetime import datetime
 
 # 현재 스크립트의 디렉토리 경로를 찾습니다
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -13,14 +14,18 @@ env_path = os.path.join(script_dir, "../.env")
 load_dotenv(dotenv_path=env_path)
 
 
-def append_rate_data(symbol):
-    data = pf.get_series(series_id="DFF", api_key=os.getenv("FRED_API_KEY"))
-    data.to_csv("../data/rate.csv", index=False)
-    df = pd.read_csv(f"../data/{symbol.lower()}.csv", parse_dates=["Open_time"])
-    new_data_df = pd.read_csv("../data/rate.csv", parse_dates=["date"], dayfirst=True)
-    df["Date"] = df["Open_time"].dt.date
-    new_data_df["date"] = new_data_df["date"].dt.date
-    value_series = new_data_df.set_index("date")["value"]
-    df["rate"] = df["Date"].map(value_series)
-    df.drop(columns=["Date"], inplace=True)
-    return df
+def get_rate_data(start_date: str, end_date: str) -> pd.DataFrame:
+    # API에서 데이터를 가져옵니다.
+    fred = pf.Fred(api_key=os.getenv("FRED_API_KEY"))
+    data = fred.get_series_all_releases(series_id="DFF")
+    # 필요한 컬럼만 선택합니다.
+    data = data[["date", "value"]]
+    # 'date' 컬럼을 datetime 타입으로 변환합니다.
+    data["date"] = pd.to_datetime(data["date"])
+    # start_date와 end_date를 datetime 객체로 변환합니다.
+    start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date, "%Y-%m-%d")
+    # start_date와 end_date 사이의 데이터만 필터링합니다.
+    filtered_data = data[(data["date"] >= start_date) & (data["date"] <= end_date)]
+
+    return filtered_data

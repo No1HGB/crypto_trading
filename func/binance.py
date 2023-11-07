@@ -4,7 +4,7 @@ import time
 import pandas as pd
 
 
-def get_data(start_date, end_date, symbol):
+def get_data(start_date, end_date, symbol) -> pd.DataFrame:
     COLUMNS = [
         "Open_time",
         "Open",

@@ -37,48 +37,26 @@ async def fetch(session, url, params, headers):
             return {"error": str(e)}
 
 
-async def append_arkham_data(
-    start_timestamp, end_timestamp, df, from_p="", to_p=""
+async def get_arkham_data(
+    start_timestamp, end_timestamp, from_p="", to_p=""
 ) -> pd.DataFrame:
     API_URL_ARKHAM = "https://api.arkhamintelligence.com/transfers"
     interval_timestamp = 15 * 60 * 1000
 
-    if from_p and not to_p:
-        df_file = f"dataframe_from_{from_p}.pkl"
-        progress_file = f"progress_from_{from_p}.txt"
-    elif not from_p and to_p:
-        df_file = f"dataframe_to_{to_p}.pkl"
-        progress_file = f"progress_to_{to_p}.txt"
-
-    # 스크립트 시작 시 저장된 데이터 프레임 불러오기
-    if os.path.exists(df_file):
-        with open(df_file, "rb") as file:
-            df = pickle.load(file)
-
-    # 진행 상태 로딩
-    if os.path.exists(progress_file):
-        with open(progress_file, "r") as file:
-            last_progress_index = int(file.readline().strip())
-    else:
-        last_progress_index = start_timestamp
-
-    current_timestamp = last_progress_index
-    processed_timestamps = set(df.index.astype(str).tolist())
+    # 새로운 DataFrame 생성
+    columns = []
+    if from_p:
+        columns.append(f"from_{from_p}")
+    elif to_p:
+        columns.append(f"to_{to_p}")
+    df = pd.DataFrame(columns=columns)
 
     async with aiohttp.ClientSession(
         connector=aiohttp.TCPConnector(ssl=False)
     ) as session:
         tasks = []
-        for i in range(current_timestamp, end_timestamp + 1, interval_timestamp):
-            date_index = datetime.fromtimestamp(i / 1000).strftime(
-                "%Y.%-m.%-d %H:%M"
-            )  # Create date_index here to check if it's processed
-
-            if (
-                date_index in processed_timestamps
-            ):  # Check if the current timestamp is already processed
-                print(f"Skipping already processed timestamp: {date_index}")
-                continue
+        for i in range(start_timestamp, end_timestamp + 1, interval_timestamp):
+            date_index = datetime.fromtimestamp(i / 1000).strftime("%Y.%-m.%-d %H:%M")
 
             base_param = {
                 "base": "binance,coinbase",
@@ -93,56 +71,36 @@ async def append_arkham_data(
             to_param = {"to": to_p}
 
             parameters = {**base_param}
-            if from_p and not to_p:
+            if from_p:
                 parameters.update(from_param)
-            elif not from_p and to_p:
+            elif to_p:
                 parameters.update(to_param)
 
             headers = {"API-Key": os.getenv("ARKHAM_API_KEY")}
 
-            # Create tasks for asynchronous execution
             tasks.append(fetch(session, API_URL_ARKHAM, parameters, headers))
 
-        batch_size = 7  # Adjust as necessary
+        batch_size = 7
         for i in range(0, len(tasks), batch_size):
             results = await asyncio.gather(*tasks[i : i + batch_size])
-            await asyncio.sleep(1)  # Adjust as necessary
+            await asyncio.sleep(1)
 
             for j, response in enumerate(results):
-                timestamp = current_timestamp + (i + j + 1) * interval_timestamp
+                timestamp = start_timestamp + (i + j) * interval_timestamp
                 date_index = datetime.fromtimestamp(timestamp / 1000).strftime(
                     "%Y.%-m.%-d %H:%M"
                 )
 
                 if "transfers" in response:
                     transfers = response["transfers"]
-
-                    total_unit_value = 0  # Reset the total unit value for each interval
-
-                    for transfer in transfers:
-                        total_unit_value += transfer["unitValue"]
-
-                    # Adding the total_unit_value to the respective cell in the dataframe
-                    if from_p and not to_p:
-                        df.at[date_index, f"from_{from_p}"] = total_unit_value
-                        print(f"from {total_unit_value} 추가 완료")
-                    elif not from_p and to_p:
-                        df.at[date_index, f"to_{to_p}"] = total_unit_value
-                        print(f"to {total_unit_value} 추가 완료")
+                    total_unit_value = sum(
+                        transfer["unitValue"] for transfer in transfers
+                    )
+                    df.at[date_index, columns[0]] = total_unit_value
+                    print(f"{columns[0]} {total_unit_value} 추가 완료")
                 else:
                     print(response)
-                    # Handle case where there are no transfers in the response for the current timestamp
-                    if from_p and not to_p:
-                        df.at[date_index, f"from_{from_p}"] = 0
-                        print(f"No data for timestamp: {date_index}_from")
-                    elif not from_p and to_p:
-                        df.at[date_index, f"to_{to_p}"] = 0
-                        print(f"No data for timestamp: {date_index}_to")
+                    df.at[date_index, columns[0]] = 0
+                    print(f"No data for timestamp: {date_index}")
 
-                # Save the progress after processing each timestamp
-                with open(df_file, "wb") as file:
-                    pickle.dump(df, file)
-
-                with open(progress_file, "w") as file:
-                    file.write(str(timestamp) + "\n")
     return df
